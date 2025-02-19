@@ -24,6 +24,17 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        // custom API exceptions
+        $exceptions->render(
+            fn(\App\Exceptions\ApiException $e) =>
+            \App\Services\ApiResponseService::errorResponse(
+                $e->getMessage(),
+                $e->getTypeName(),
+                $e->getStatusCode(),
+                $e->getDetails()
+            )
+        );
+        // base framework exceptions
         $exceptions->render(
             fn(\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) =>
             \App\Services\ApiResponseService::errorResponse(
