@@ -19,6 +19,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Mysql Grammar for using datetime fields with milliseconds resolution
+        \Illuminate\Support\Facades\DB::connection()->setQueryGrammar(
+            new \App\Support\Database\Query\Grammars\MysqlGrammar()
+        );
+
     }
 }
