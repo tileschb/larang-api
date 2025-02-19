@@ -3,6 +3,4 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function (Request $request) {
-    return ['messsage' => 'Wokrs!'];
-});
+Route::prefix('v1')->name('v1.')->group(base_path('routes/api/v1.php'));

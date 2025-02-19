@@ -12,18 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('personal_access_tokens', function (Blueprint $table) {
-            Schema::create('personal_access_tokens', function (Blueprint $table) {
-                $table->id();
-                $table->morphs('tokenable');
-                $table->enum('type', [\App\Models\PersonalAccessToken::TYPES]);
-                $table->foreignId('auth_token_id')->nullable()
-                    ->references('id')->on('personal_access_tokens')
-                    ->onDelete('cascade');
-                $table->string('token', 64)->unique();
-                $table->text('abilities')->nullable();
-                $table->timestamp('expires_at', 3)->nullable();
-                $table->timestamps(3);
-            });
+            $table->id();
+            $table->morphs('tokenable');
+            $table->enum('type', [\App\Models\PersonalAccessToken::TYPES]);
+            $table->foreignId('auth_token_id')->nullable()
+                ->references('id')->on('personal_access_tokens')
+                ->onDelete('cascade');
+            $table->string('token', 64)->unique();
+            $table->text('abilities')->nullable();
+            $table->timestamp('expires_at', 3)->nullable();
+            $table->timestamps(3);
         });
     }
 

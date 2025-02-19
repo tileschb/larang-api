@@ -1,0 +1,46 @@
+### Required fields are missing
+POST {{base-url}}/v1/register
+Content-Type: application/json
+
+{
+
+}
+
+> {%
+    client.test("Request has validation errors", function () {
+        client.assert(response.status === 422, "Response status is not 422");
+        client.assert(response.body.success === false, "Response success is not false");
+        client.assert(response.body.error.code === 'VALIDATION_ERROR', "Response error code is not VALIDATION_ERROR");
+    });
+    client.test("Response error details contains required fields", function () {
+        client.assert(response.body.error.details.hasOwnProperty('name'), "Response error details does not have name field");
+        client.assert(response.body.error.details.hasOwnProperty('email'), "Response error details does not have email field");
+        client.assert(response.body.error.details.hasOwnProperty('password'), "Response error details does not have password field");
+    });
+%}
+
+### Register a new user
+< {%
+    client.global.set("random_email", $random.email);
+%}
+POST {{base-url}}/v1/register
+Content-Type: application/json
+
+{
+    "name": "Somebody with random email",
+    "email": "{{random_email}}",
+    "password": "somePassword12!"
+}
+
+> {%
+    client.test("User is registered", function () {
+        client.assert(response.status === 201, "Response status is not 201");
+        client.assert(response.body.success === true, "Response success is not true");
+        client.assert(response.body.error === null, "Response error is not null");
+        client.assert(response.body.data.hasOwnProperty('id'), "Response data does not have id field");
+        client.assert(response.body.data.hasOwnProperty('name'), "Response data does not have name field");
+        client.assert(response.body.data.hasOwnProperty('email'), "Response data does not have email field");
+        client.assert(response.body.data.hasOwnProperty('createdAt'), "Response data does not have created_at field");
+        client.assert(response.body.data.hasOwnProperty('updatedAt'), "Response data does not have updated_at field");
+    });
+%}
