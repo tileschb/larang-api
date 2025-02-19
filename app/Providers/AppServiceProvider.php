@@ -24,5 +24,8 @@ class AppServiceProvider extends ServiceProvider
             new \App\Support\Database\Query\Grammars\MysqlGrammar()
         );
 
+        // Use the custom token model
+        \Laravel\Sanctum\Sanctum::usePersonalAccessTokenModel(\App\Models\PersonalAccessToken::class);
+
     }
 }
