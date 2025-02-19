@@ -27,5 +27,10 @@ class AppServiceProvider extends ServiceProvider
         // Use the custom token model
         \Laravel\Sanctum\Sanctum::usePersonalAccessTokenModel(\App\Models\PersonalAccessToken::class);
 
+        // Check token type and route name to ensure the right token is used
+        \Laravel\Sanctum\Sanctum::authenticateAccessTokensUsing(function ($token, $isValid) {
+            $isRefreshRoute = str_ends_with(request()->route()->getName(), 'token-refresh');
+            return $isValid && ($isRefreshRoute ? $token->isRefreshToken() : $token->isAuthToken());
+        });
     }
 }

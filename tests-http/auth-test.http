@@ -1,0 +1,180 @@
+### Try to login with invalid credentials
+< {%
+    client.global.set("random_email", $random.email);
+%}
+POST {{base-url}}/v1/auth/login
+Content-Type: application/json
+
+{
+    "email": "{{random_email}}",
+    "password": "somePassword12!"
+}
+
+> {%
+    client.test("Login attempt with invalid credentials", function () {
+        client.assert(response.status === 401, "Response status is not 401");
+        client.assert(response.body.success === false, "Response success is not false");
+        client.assert(response.body.error.code === 'INVALID_CREDENTIALS', "Response error code is not INVALID_CREDENTIALS");
+    });
+%}
+
+### Login and issue a JWT
+POST {{base-url}}/v1/auth/login
+Content-Type: application/json
+
+{
+    "email": "test@example.com",
+    "password": "test12"
+}
+
+> {%
+    client.test("User is logged in", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.success === true, "Response success is not true");
+        client.assert(response.body.error === null, "Response error is not null");
+        client.assert(response.body.data.hasOwnProperty('accessToken'), "Response data does not have accessToken field");
+        client.assert(response.body.data.hasOwnProperty('refreshToken'), "Response data does not have refreshToken field");
+    });
+
+    if (response.body.success) {
+        client.global.set("access_token", response.body.data.accessToken);
+        client.global.set("refresh_token", response.body.data.refreshToken);
+    }
+%}
+
+### Who am I
+GET {{base-url}}/v1/auth/me
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("User data in response", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.success === true, "Response success is not true");
+        client.assert(response.body.error === null, "Response error is not null");
+        client.assert(response.body.data.hasOwnProperty('id'), "Response data does not have id field");
+        client.assert(response.body.data.hasOwnProperty('name'), "Response data does not have name field");
+        client.assert(response.body.data.hasOwnProperty('email'), "Response data does not have email field");
+        client.assert(response.body.data.hasOwnProperty('createdAt'), "Response data does not have createdAt field");
+        client.assert(response.body.data.hasOwnProperty('updatedAt'), "Response data does not have updatedAt field");
+    });
+%}
+
+### Try to access protected route without token
+GET {{base-url}}/v1/auth/me
+Content-Type: application/json
+
+> {%
+    client.test("Access protected route without token", function () {
+        client.assert(response.status === 401, "Response status is not 401");
+        client.assert(response.body.success === false, "Response success is not false");
+        client.assert(response.body.error.code === 'UNAUTHENTICATED', "Response error code is not UNAUTHENTICATED");
+    });
+%}
+
+### Try to access protected route with invalid token
+GET {{base-url}}/v1/auth/me
+Content-Type: application/json
+Authorization: Bearer invalid_token
+
+> {%
+    client.test("Access protected route with invalid token", function () {
+        client.assert(response.status === 401, "Response status is not 401");
+        client.assert(response.body.success === false, "Response success is not false");
+        client.assert(response.body.error.code === 'UNAUTHENTICATED', "Response error code is not UNAUTHENTICATED");
+    });
+%}
+
+### Try to access protected route with refresh token
+GET {{base-url}}/v1/auth/me
+Content-Type: application/json
+Authorization: Bearer {{refresh_token}}
+
+> {%
+    client.test("Access protected route with refresh token", function () {
+        client.assert(response.status === 401, "Response status is not 401");
+        client.assert(response.body.success === false, "Response success is not false");
+        client.assert(response.body.error.code === 'UNAUTHENTICATED', "Response error code is not UNAUTHENTICATED");
+    });
+%}
+
+### Refresh token
+POST {{base-url}}/v1/auth/refresh
+Content-Type: application/json
+Authorization: Bearer {{refresh_token}}
+
+> {%
+    client.test("Token is refreshed", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.success === true, "Response success is not true");
+        client.assert(response.body.error === null, "Response error is not null");
+        client.assert(response.body.data.hasOwnProperty('accessToken'), "Response data does not have accessToken field");
+        client.assert(response.body.data.hasOwnProperty('refreshToken'), "Response data does not have refreshToken field");
+    });
+
+    if (response.body.success) {
+        client.global.set("access_token", response.body.data.accessToken);
+        client.global.set("refresh_token", response.body.data.refreshToken);
+    }
+%}
+
+### Try token refresh with auth token
+POST {{base-url}}/v1/auth/refresh
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("Token refresh attempt with access token", function () {
+        client.assert(response.status === 401, "Response status is not 401");
+        client.assert(response.body.success === false, "Response success is not false");
+        client.assert(response.body.error.code === 'UNAUTHENTICATED', "Response error code is not UNAUTHENTICATED");
+    });
+%}
+
+### Try token refresh with invalid token
+POST {{base-url}}/v1/auth/refresh
+Content-Type: application/json
+Authorization: Bearer invalid_token
+
+> {%
+    client.test("Token refresh attempt with invalid token", function () {
+        client.assert(response.status === 401, "Response status is not 401");
+        client.assert(response.body.success === false, "Response success is not false");
+        client.assert(response.body.error.code === 'UNAUTHENTICATED', "Response error code is not UNAUTHENTICATED");
+    });
+%}
+
+### Logout and invalidate tokens
+POST {{base-url}}/v1/auth/logout
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+### Try to access protected route with invalidated token
+GET {{base-url}}/v1/auth/me
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("Access protected route with invalidated token", function () {
+        client.assert(response.status === 401, "Response status is not 401");
+        client.assert(response.body.success === false, "Response success is not false");
+        client.assert(response.body.error.code === 'UNAUTHENTICATED', "Response error code is not UNAUTHENTICATED");
+    });
+%}
+
+### Try to refresh invalidated token
+POST {{base-url}}/v1/auth/refresh
+Content-Type: application/json
+Authorization: Bearer {{refresh_token}}
+
+> {%
+    client.test("Refresh invalidated token", function () {
+        client.assert(response.status === 401, "Response status is not 401");
+        client.assert(response.body.success === false, "Response success is not false");
+        client.assert(response.body.error.code === 'UNAUTHENTICATED', "Response error code is not UNAUTHENTICATED");
+    });
+%}
+
+### Status
+GET {{base-url}}/up
+Content-Type: application/json
